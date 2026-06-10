@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>圣经金句抽签</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --gold: #c9a84c;
+      --gold-light: #e8d49a;
+      --cream: #faf7f0;
+      --muted: #7a7468;
+    }
+
+    body {
+      background: var(--ink);
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', '华文仿宋', STFangsong, serif;
+      padding: 2rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(201,168,76,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      max-width: 460px;
+      width: 100%;
+      animation: fadeUp 0.7s ease both;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LANDING ── */
+    .ornament {
+      font-size: 1.2rem;
+      color: var(--gold);
+      letter-spacing: 0.5em;
+      margin-bottom: 2rem;
+      opacity: 0.6;
+    }
+
+    .landing-title {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 400;
+      color: var(--cream);
+      letter-spacing: 0.12em;
+      line-height: 1.3;
+      margin-bottom: 0.8rem;
+    }
+
+    .landing-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 3rem;
+      font-style: italic;
+    }
+
+    .draw-btn {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 1.1rem;
+      letter-spacing: 0.25em;
+      padding: 1rem 3rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .draw-btn:hover, .draw-btn:active {
+      background: var(--gold);
+      color: var(--ink);
+    }
+
+    .landing-note {
+      margin-top: 2rem;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.18);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── VERSE CARD ── */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 4px;
+      padding: 3rem 2.5rem 2.5rem;
+      width: 100%;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .verse-ref {
+      font-size: 0.85rem;
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.8rem;
+    }
+
+    .verse-text {
+      font-size: clamp(1.25rem, 4vw, 1.6rem);
+      line-height: 2;
+      color: var(--cream);
+      font-style: italic;
+      margin-bottom: 2rem;
+      letter-spacing: 0.05em;
+    }
+
+    .verse-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(201,168,76,0.15);
+      margin-bottom: 2rem;
+    }
+
+    .again-btn {
+      background: transparent;
+      border: 1px solid rgba(201,168,76,0.4);
+      color: rgba(201,168,76,0.6);
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      padding: 0.65rem 1.8rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .again-btn:hover, .again-btn:active {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .footer-note {
+      margin-top: 2.5rem;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LANDING SCREEN -->
+  <div class="screen active" id="screen-landing">
+    <button class="draw-btn" onclick="drawVerse()">START</button>
+  </div>
+
+  <!-- VERSE SCREEN -->
+  <div class="screen" id="screen-verse">
+    <div class="card">
+      <p class="verse-ref" id="verse-ref"></p>
+      <p class="verse-text" id="verse-text"></p>
+      <p class="verse-note" id="verse-note"></p>
+      <hr class="divider" />
+      <button class="again-btn" onclick="goBack()">← 重 新 抽 签</button>
+    </div>
+  </div>
+
+<script>
+  const verses = [
+    {
+      ref: "箴言 4:23",
+      text: "你要保守你心，勝過保守一切，因為一生的果效是由心發出。",
+      note: ""
+    },
+    {
+      ref: "哥林多前书 2:9",
+      text: "神为爱他的人所预备的，是眼睛未曾看见，耳朵未曾听见，人心也未曾想到的。",
+      note: ""
+    },
+    {
+      ref: "箴言 3:5–6",
+      text: "你要專心仰賴耶和華，不可倚靠自己的聰明，在你一切所行的事上都要認定他，他必指引你的路。",
+      note: ""
+    },
+    {
+      ref: "罗马书 12:1–2",
+      text: "所以弟兄们，我以神的慈悲劝你们，将身体献上，当做活祭，是圣洁的，是神所喜悦的，你们如此侍奉乃是理所当然的。不要效法这个世界，只要心意更新而变化，叫你们察验何为神的善良、纯全、可喜悦的旨意。",
+      note: ""
+    }
+  ];
+
+  let lastIndex = -1;
+
+  function drawVerse() {
+    let idx;
+    do { idx = Math.floor(Math.random() * verses.length); }
+    while (idx === lastIndex && verses.length > 1);
+    lastIndex = idx;
+
+    const v = verses[idx];
+    document.getElementById('verse-ref').textContent = v.ref;
+    document.getElementById('verse-text').textContent = '\u201C' + v.text + '\u201D';
+    document.getElementById('verse-note').textContent = v.note;
+    document.getElementById('verse-note').style.display = v.note ? 'block' : 'none';
+
+    showScreen('screen-verse');
+  }
+
+  function goBack() {
+    showScreen('screen-landing');
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.animation = 'none';
+    });
+    const target = document.getElementById(id);
+    target.classList.add('active');
+    target.offsetHeight;
+    target.style.animation = 'fadeUp 0.7s ease both';
+  }
+</script>
+</body>
+</html>
